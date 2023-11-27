@@ -5,6 +5,9 @@ class MyGame extends Phaser.Scene {
   platforms;
   player;
   cursors;
+  stars;
+  score = 0;
+  scoreText;
 
   constructor() {
     super();
@@ -27,7 +30,6 @@ class MyGame extends Phaser.Scene {
 
   create() {
     this.add.image(400, 300, "sky");
-    this.add.image(300, 470, "star");
 
     this.platforms = this.physics.add.staticGroup();
 
@@ -63,7 +65,31 @@ class MyGame extends Phaser.Scene {
     });
 
     this.cursors = this.input.keyboard.createCursorKeys();
+    this.stars = this.physics.add.group({
+      key: "star",
+      repeat: 11,
+      setXY: { x: 12, y: 0, stepX: 70 },
+    });
+
+    this.stars.children.iterate(function (child) {
+      child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
+    });
+
+    this.scoreText = this.add.text(16, 16, "score: 0", {
+      fontSize: "32px",
+      fill: "#000",
+    });
+
     this.physics.add.collider(this.player, this.platforms);
+    this.physics.add.collider(this.stars, this.platforms);
+
+    this.physics.add.overlap(
+      this.player,
+      this.stars,
+      this.collectStar,
+      null,
+      this
+    );
   }
 
   update() {
@@ -84,6 +110,12 @@ class MyGame extends Phaser.Scene {
     if (this.cursors.up.isDown && this.player.body.touching.down) {
       this.player.setVelocityY(-330);
     }
+  }
+
+  collectStar(player, star) {
+    star.disableBody(true, true);
+    this.score += 10;
+    this.scoreText.setText("Score: " + this.score);
   }
 }
 
