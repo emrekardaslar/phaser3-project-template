@@ -1,22 +1,20 @@
 import Phaser from "phaser";
-/* import logoImg from "./assets/logo.png"; */
 
 class MyGame extends Phaser.Scene {
   platforms;
   player;
   cursors;
   stars;
+  bombs;
   score = 0;
   scoreText;
+  gameOver = false;
 
   constructor() {
     super();
   }
 
   preload() {
-    //  This is an example of a bundled image:
-    /*     this.load.image("logo", logoImg); */
-
     //  This is an example of loading a static image from the public folder:
     this.load.image("sky", "assets/sky.png");
     this.load.image("ground", "assets/platform.png");
@@ -33,17 +31,21 @@ class MyGame extends Phaser.Scene {
 
     this.platforms = this.physics.add.staticGroup();
 
+    //  Scale it to fit the width of the game (the original sprite is 400x32 in size)
     this.platforms.create(400, 568, "ground").setScale(2).refreshBody();
 
     this.platforms.create(600, 400, "ground");
     this.platforms.create(50, 250, "ground");
     this.platforms.create(750, 220, "ground");
 
+    // The player and its settings
     this.player = this.physics.add.sprite(100, 450, "dude");
 
+    //  Player physics properties. Give the little guy a slight bounce.
     this.player.setBounce(0.2);
     this.player.setCollideWorldBounds(true);
 
+    //  Our player animations, turning, walking left and walking right.
     this.anims.create({
       key: "left",
       frames: this.anims.generateFrameNumbers("dude", { start: 0, end: 3 }),
@@ -64,7 +66,10 @@ class MyGame extends Phaser.Scene {
       repeat: -1,
     });
 
+    //  Input Events
     this.cursors = this.input.keyboard.createCursorKeys();
+
+    //  Some stars to collect, 12 in total, evenly spaced 70 pixels apart along the x axis
     this.stars = this.physics.add.group({
       key: "star",
       repeat: 11,
@@ -72,16 +77,22 @@ class MyGame extends Phaser.Scene {
     });
 
     this.stars.children.iterate(function (child) {
+      //  Give each star a slightly different bounce
       child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
     });
 
+    this.bombs = this.physics.add.group();
+
+    //  The score
     this.scoreText = this.add.text(16, 16, "score: 0", {
       fontSize: "32px",
       fill: "#000",
     });
 
+    //  Collide the player and the stars with the platforms
     this.physics.add.collider(this.player, this.platforms);
     this.physics.add.collider(this.stars, this.platforms);
+    this.physics.add.collider(this.bombs, this.platforms);
 
     this.physics.add.overlap(
       this.player,
@@ -90,9 +101,21 @@ class MyGame extends Phaser.Scene {
       null,
       this
     );
+
+    this.physics.add.collider(
+      this.player,
+      this.bombs,
+      this.hitBomb,
+      null,
+      this
+    );
   }
 
   update() {
+    if (this.gameOver) {
+      return;
+    }
+
     if (this.cursors.left.isDown) {
       this.player.setVelocityX(-160);
 
@@ -116,6 +139,34 @@ class MyGame extends Phaser.Scene {
     star.disableBody(true, true);
     this.score += 10;
     this.scoreText.setText("Score: " + this.score);
+
+    if (this.stars.countActive(true) === 0) {
+      //  A new batch of stars to collect
+      this.stars.children.iterate(function (child) {
+        child.enableBody(true, child.x, 0, true, true);
+      });
+
+      var x =
+        player.x < 400
+          ? Phaser.Math.Between(400, 800)
+          : Phaser.Math.Between(0, 400);
+
+      var bomb = this.bombs.create(x, 16, "bomb");
+      bomb.setBounce(1);
+      bomb.setCollideWorldBounds(true);
+      bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
+      bomb.allowGravity = false;
+    }
+  }
+
+  hitBomb() {
+    this.physics.pause();
+
+    this.player.setTint(0xff0000);
+
+    this.player.anims.play("turn");
+
+    this.gameOver = true;
   }
 }
 
