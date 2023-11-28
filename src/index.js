@@ -1,13 +1,28 @@
 import Phaser from "phaser";
 
 class MyGame extends Phaser.Scene {
+  /** Platforms @type {Phaser.Physics.Arcade.StaticGroup} */
   platforms;
+
+  /** @type {Phaser.Physics.Arcade.Sprite} */
   player;
+
+  /** @type {Phaser.Types.Input.Keyboard.CursorKeys} */
   cursors;
+
+  /** @type {Phaser.Physics.Arcade.Group} */
   stars;
+
+  /** @type {Phaser.Physics.Arcade.Group} */
   bombs;
+
+  /** Score counter @type {number} **/
   score = 0;
+
+  /** Score text to show the score @type {string} **/
   scoreText;
+
+  /** Indicates the game is over or not @type {boolean} **/
   gameOver = false;
 
   constructor() {
